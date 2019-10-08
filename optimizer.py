@@ -15,7 +15,6 @@ class Optimizer:
         self.sigma_r = [0.05, 0.1, 0.2]
         self.jbf = Joint_bilateral_filter(self.sigma_s[0], self.sigma_r[0])
         self.results = {}
-        self.local_bests = {}
 
     def generate_weights(self):
         ret = []
@@ -34,7 +33,7 @@ class Optimizer:
         try:
             gray_img = self.rgb2gray(input_img, w)
             jbf = Joint_bilateral_filter(ss, sr)
-            jbf_img = jbf.joint_bilateral_filter(input_img, gray_img).astype(np.int32)
+            jbf_img = jbf.joint_bilateral_filter(input_img, gray_img)
             # cv2.imwrite('outputs/'+store_dir+'/'+str(ss)+'_'+str(sr)+'_'+'_'.join([str(x) for x in w])+'jbf_img.jpg', jbf_img)
             cost = np.sum(np.abs(jbf_img - bf_img))
             self.lock.acquire()
@@ -56,7 +55,7 @@ class Optimizer:
             for sr in tqdm(self.sigma_r):
                 self.jbf.set_sigma_s(ss)
                 self.jbf.set_sigma_r(sr)
-                bf_img = self.jbf.joint_bilateral_filter(input_img, input_img).astype(np.int32)
+                bf_img = self.jbf.joint_bilateral_filter(input_img, input_img)
                 # cv2.imwrite('outputs/'+store_dir+'/'+str(ss)+'_'+str(sr)+'bf_img.jpg', bf_img)
                 workers = []
                 self.lock = threading.Lock()
@@ -126,7 +125,7 @@ class Optimizer:
                 except KeyError:
                     votes['_'.join([str(x) for x in np.around(candidate[0], decimals=2)])] = 1
         for key in votes:
-            print(key, votes[key])
+            print(key, votes[key], )
         sorted_votes = sorted(votes.items(), key=lambda x:x[1], reverse=True)
         print(sorted_votes[:3])
         img_path = 'testdata/'+img_name+'.png'
@@ -139,13 +138,8 @@ class Optimizer:
             weights = [float(i) for i in x[0].split('_')]
             gray_img = self.rgb2gray(input_img, weights)
             cv2.imwrite('outputs/bests/'+img_name+'/'+'best'+str(i)+'_'+x[0]+'.jpg', gray_img)
-
-    def check(self, output_dir, img_name):
-        with open('outputs/all_results_'+img_name+'.pkl', 'rb') as file:
-            all_results = pickle.load(file)
-        for key in all_results:
-            for x in all_results['2_0.2']:
-                print (x[0],x[1])
+        gray_img = self.rgb2gray(input_img,(0.1,0.9,0))
+        cv2.imwrite('outputs/bests/'+img_name+'/'+'best'+str(4)+'_0.1_0.9_0.0.jpg', gray_img)
 
     def check_find_local_optimal(self, input_img_path, store_dir):
         img = cv2.imread(input_img_path)
@@ -186,8 +180,17 @@ class Optimizer:
 
 if __name__ == '__main__':
     opt = Optimizer()
-    test_img = '0b'
+    test_img = '1c'
     output_dir = 'outputs/bests/'+test_img
+    # Output bf image
+    ##########
+    # input_img = cv2.imread('testdata/'+test_img+'.png')
+    # input_img = cv2.cvtColor(input_img, cv2.COLOR_BGR2RGB)
+    # jbf = Joint_bilateral_filter(1, 0.05)
+    # bf_img = jbf.joint_bilateral_filter(input_img, input_img).astype(np.uint8)
+    # bf_img = cv2.cvtColor(bf_img, cv2.COLOR_RGB2BGR)
+    # cv2.imwrite('outputs/bests/'+test_img+'/1_0.05_bf_img.jpg', bf_img)
+    ##########
     try:
         os.mkdir(output_dir)
         os.mkdir('outputs/'+test_img)
@@ -197,4 +200,3 @@ if __name__ == '__main__':
 
     # opt.find_local_optimal('testdata/'+test_img+'.png', test_img)
     opt.vote(output_dir, test_img)
-    # opt.check(output_dir, test_img)

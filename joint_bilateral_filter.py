@@ -68,4 +68,8 @@ class Joint_bilateral_filter(object):
                     output[x,y,i] = np.sum(self.F*input_region[:,:,i]) / np.sum(self.F)
         return output
 
+if __name__ == '__main__':
+    JBF = Joint_bilateral_filter(1, 0.05, border_type='reflect')
+    for x in JBF.Gs:
+        print(np.around(x, decimals=7))
 
